@@ -1,0 +1,38 @@
+{
+  "name": "momo-launcher",
+  "version": "1.0.0",
+  "description": "A launcher for Momo",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Momo-Modding/Momo-Launcher"
+  },
+  "author": "ABU008",
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "axios": "^1.15.0",
+    "extract-zip": "^2.0.1"
+  },
+  "devDependencies": {
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.momo.launcher",
+    "productName": "MomoLauncher",
+    "win": {
+      "target": "nsis",
+      "icon": "images/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "MomoLauncher-Setup.${ext}"
+    }
+  }
+}

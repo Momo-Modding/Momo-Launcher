@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Momo Launcher</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: #0d0d12; color: #e0e0e0; overflow-x: hidden; }
+
+        .app-container { 
+            max-width: 1200px; margin: 0 auto; padding: 30px; 
+            display: grid; grid-template-columns: 300px 1fr; gap: 40px; min-height: 100vh; align-items: start; 
+        }
+
+        .sidebar { 
+            display: flex; flex-direction: column; gap: 25px; background: #15151e; 
+            padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
+            border: 1px solid #262635; position: sticky; top: 30px; 
+        }
+
+        .sidebar h1 { font-weight: 800; font-size: 32px; letter-spacing: 2px; color: #ffffff; text-align: center; margin-bottom: 10px; }
+        .sidebar-section { display: flex; flex-direction: column; gap: 12px; }
+        .sidebar-section.bottom-anchored { margin-top: 20px; padding-top: 25px; border-top: 1px solid #262635; }
+        .sidebar label { font-size: 12px; color: #a0a0b5; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+        button { 
+            font-family: 'Inter', sans-serif; font-weight: 600; height: 46px; width: 100%; 
+            padding: 0 20px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease; 
+            text-transform: uppercase; font-size: 13px; letter-spacing: 1px; white-space: nowrap; 
+        }
+        button:disabled { cursor: not-allowed; opacity: 0.6; }
+
+        .btn-primary { background: linear-gradient(135deg, #00ff88 0%, #00b35f 100%); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3); font-size: 14px;}
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5); }
+        .btn-secondary { background: transparent; color: #fff; border: 1px solid #3e3e4f; }
+        .btn-secondary:hover { background: #2a2a35; border-color: #55556b; }
+        .btn-danger { background: rgba(220, 53, 69, 0.1); color: #ff4d4d; border: 1px solid rgba(220, 53, 69, 0.3); }
+        .btn-danger:hover { background: #dc3545; color: white; }
+        .btn-install { background: #007bff; color: white; }
+        .btn-install:hover { background: #0056b3; }
+
+        select { 
+            background-color: #1e1e28; 
+            color: #fff; 
+            padding: 12px 40px 12px 15px; 
+            border: 1px solid #3e3e4f; 
+            border-radius: 8px; 
+            font-family: 'Inter', sans-serif; 
+            outline: none; 
+            cursor: pointer; 
+            font-weight: 600; 
+            width: 100%;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0b5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
+        }
+
+        .playtime-display { font-size: 13px; color: #a0a0b5; text-align: center; margin-bottom: 5px; }
+
+        h2 { font-size: 20px; font-weight: 600; color: #a0a0b5; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;}
+        .mod-stack { display: flex; flex-direction: column; gap: 15px; }
+        .mod-card { background: #15151e; border: 1px solid #262635; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
+        .mod-card:hover { transform: translateX(5px); border-color: #3e3e4f; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+        .mod-card h3 { font-size: 20px; margin-bottom: 5px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .mod-card h3 small { font-size: 12px; background: #262635; padding: 4px 8px; border-radius: 6px; color: #a0a0b5; }
+        .mod-card .author { font-size: 14px; color: #78788f; margin-bottom: 15px; }
+        .mod-card .desc { font-size: 15px; line-height: 1.6; color: #bbbbc5; flex-grow: 1; margin-bottom: 20px; }
+        .mod-card-actions { display: flex; gap: 15px; margin-top: auto; padding-top: 15px; }
+        .mod-card-actions button { flex: 1; }
+        .btn-update { background: #ff9900; color: #000; }
+        .btn-update:hover { background: #e68a00; }
+
+        #drop-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 255, 136, 0.2); backdrop-filter: blur(5px); z-index: 9999; border: 4px dashed #00ff88; justify-content: center; align-items: center; pointer-events: none; }
+        #drop-overlay h1 { color: #00ff88; font-size: 40px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #15151e; padding: 30px; border-radius: 12px; width: 400px; border: 1px solid #3e3e4f; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .modal-content h3 { margin-bottom: 20px; color: #fff; font-size: 20px; }
+        .modal-content input { width: 100%; padding: 14px; background: #0d0d12; border: 1px solid #3e3e4f; color: white; border-radius: 8px; margin-bottom: 20px; font-family: 'Inter'; font-size: 15px; outline: none; user-select: text; -webkit-user-select: text; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-actions button { width: auto; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0d0d12; }
+        ::-webkit-scrollbar-thumb { background: #262635; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div id="drop-overlay"><h1>DROP .ZIP TO INSTALL</h1></div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <h1>MOMO</h1>
+            
+            <div class="sidebar-section">
+                <label>Game Instance</label>
+                <select id="instance-select"></select>
+                <div style="display: flex; gap: 10px;">
+                    <button id="new-instance-btn" class="btn-secondary" style="flex-grow: 1;">+ New Instance</button>
+                    <button id="rename-instance-btn" class="btn-secondary" style="width: 46px; padding: 0;" title="Rename Instance">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="sidebar-section">
+                <label>Settings & Files</label>
+                <button id="bepinex-btn" class="btn-secondary">Install BepInEx</button>
+                <button id="uninstall-bepinex-btn" class="btn-danger" style="display: none;">Uninstall BepInEx</button>
+                <button id="open-folder-btn" class="btn-secondary">Open Mods Folder</button>
+            </div>
+
+            <div class="sidebar-section bottom-anchored">
+                <div id="playtime-text" class="playtime-display">0.0 hrs on record</div>
+                <button id="install-game-btn" class="btn-install">INSTALL GAME</button>
+                
+                <div id="progress-container" style="display: none; width: 100%; background: #262635; border-radius: 6px; overflow: hidden; margin-top: 10px;">
+                    <div id="progress-bar" style="width: 0%; height: 6px; background: #00ff88; transition: width 0.1s linear;"></div>
+                </div>
+
+                <div id="play-group" style="display: none; gap: 10px;">
+                    <button id="play-btn" class="btn-primary" style="flex-grow: 1;">PLAY GAME</button>
+                    <button id="uninstall-game-btn" class="btn-danger" style="width: 46px; padding: 0; font-size: 18px;" title="Uninstall Instance">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main>
+            <h2>Available Mods</h2>
+            <div id="mod-list" class="mod-stack">Loading mods...</div>
+        </main>
+    </div>
+
+    <div id="instance-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Create New Instance</h3>
+            <input type="text" id="instance-name-input" placeholder="e.g., Kaizo Momo" autocomplete="off">
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="modal-create-btn" class="btn-primary" style="padding: 0 24px;">Create Instance</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rename-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Rename Instance</h3>
+            <input type="text" id="rename-name-input" autocomplete="off">
+            <div class="modal-actions">
+                <button id="rename-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="rename-submit-btn" class="btn-primary" style="padding: 0 24px;">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./renderer.js"></script>
+</body>
+</html>
