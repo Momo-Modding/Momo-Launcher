@@ -19,4 +19,6 @@ If you want to modify the launcher yourself:
 1. Clone this repository:
    ```bash
    git clone https://github.com/Momo-Modding/Momo-Launcher.git
-2. Run `` npm run build ``
+2. Run
+   ```bash
+   npm run build
