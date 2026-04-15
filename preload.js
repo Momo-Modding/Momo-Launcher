@@ -24,8 +24,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getState: () => ipcRenderer.invoke('get-state'),
     
     onGameClosed: (callback) => ipcRenderer.on('game-closed', callback),
+    onPlaytimeUpdate: (callback) => ipcRenderer.on('playtime-update', callback),
     onDownloadProgress: (callback) => ipcRenderer.on('download-progress', callback),
     onDownloadStatus: (callback) => ipcRenderer.on('download-status', callback),
+    
+    checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
     onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
+    onUpdateError: (callback) => ipcRenderer.on('update-error', callback),
     restartApp: () => ipcRenderer.send('restart-app')
 });

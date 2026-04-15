@@ -93,48 +93,36 @@
     <div id="drop-overlay"><h1>DROP .ZIP TO INSTALL</h1></div>
 
     <div class="app-container">
-        
         <aside class="sidebar">
             <h1>MOMO</h1>
-            
             <div class="sidebar-section">
                 <label>Game Instance</label>
                 <select id="instance-select"></select>
                 <div style="display: grid; grid-template-columns: 1fr 46px 46px; gap: 10px;">
                     <button id="new-instance-btn" class="btn-secondary" style="padding: 0 10px;">+ New</button>
-                    <button id="rename-instance-btn" class="btn-secondary" style="padding: 0;" title="Rename Instance">
-                        <i class="fa-solid fa-pen"></i>
-                    </button>
-                    <button id="delete-instance-btn" class="btn-danger" style="padding: 0;" title="Delete Instance">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
+                    <button id="rename-instance-btn" class="btn-secondary" style="padding: 0;" title="Rename Instance"><i class="fa-solid fa-pen"></i></button>
+                    <button id="delete-instance-btn" class="btn-danger" style="padding: 0;" title="Delete Instance"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             </div>
-            
             <div class="sidebar-section">
                 <label>Settings & Files</label>
+                <button id="check-updates-btn" class="btn-secondary">Check for Updates</button>
                 <button id="bepinex-btn" class="btn-secondary">Install BepInEx</button>
                 <button id="uninstall-bepinex-btn" class="btn-danger" style="display: none;">Uninstall BepInEx</button>
                 <button id="open-folder-btn" class="btn-secondary">Open Mods Folder</button>
             </div>
-
             <div class="sidebar-section bottom-anchored">
                 <div id="playtime-text" class="playtime-display">0.0 hrs on record</div>
                 <button id="install-game-btn" class="btn-install">INSTALL GAME</button>
-                
                 <div id="progress-container" style="display: none; width: 100%; background: #262635; border-radius: 6px; overflow: hidden; margin-top: 10px;">
                     <div id="progress-bar" style="width: 0%; height: 6px; background: #00ff88; transition: width 0.1s linear;"></div>
                 </div>
-
                 <div id="play-group" style="display: none; gap: 10px;">
                     <button id="play-btn" class="btn-primary" style="flex-grow: 1;">PLAY GAME</button>
-                    <button id="uninstall-game-btn" class="btn-danger" style="width: 46px; padding: 0; font-size: 18px;" title="Uninstall Instance">
-                        <i class="fa-regular fa-trash-can"></i>
-                    </button>
+                    <button id="uninstall-game-btn" class="btn-danger" style="width: 46px; padding: 0; font-size: 18px;" title="Uninstall Instance"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
             </div>
         </aside>
-
         <main>
             <h2>Available Mods</h2>
             <div id="mod-list" class="mod-stack">Loading mods...</div>
@@ -166,9 +154,7 @@
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-content" style="border-color: #dc3545;">
             <h3 style="color: #ff4d4d;">Delete Instance</h3>
-            <p style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;">
-                Are you sure you want to permanently delete <strong id="delete-target-name" style="color: white;"></strong>?<br><br>This will erase the game, mods, and your playtime.
-            </p>
+            <p style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;">Are you sure you want to permanently delete <strong id="delete-target-name" style="color: white;"></strong>?<br><br>This will erase the game, mods, and your playtime.</p>
             <div class="modal-actions">
                 <button id="delete-cancel-btn" class="btn-secondary">Cancel</button>
                 <button id="delete-submit-btn" class="btn-danger" style="padding: 0 24px;">Delete</button>
@@ -186,14 +172,21 @@
         </div>
     </div>
 
+    <div id="confirm-modal" class="modal-overlay" style="z-index: 2100;">
+        <div class="modal-content" style="border-color: #007bff;">
+            <h3 style="color: #007bff;"><i class="fa-solid fa-circle-question"></i> Confirm Action</h3>
+            <p id="confirm-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;"></p>
+            <div class="modal-actions">
+                <button id="confirm-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="confirm-yes-btn" class="btn-primary" style="padding: 0 24px;">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <div id="update-modal" class="modal-overlay" style="z-index: 2500;">
         <div class="modal-content" style="border-color: #00ff88; text-align: center;">
-            <h3 style="color: #00ff88; font-size: 24px; margin-bottom: 10px;">
-                <i class="fa-solid fa-circle-arrow-up"></i> Update Ready!
-            </h3>
-            <p style="color: #bbbbc5; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">
-                A new version of the Momo Launcher has been downloaded in the background.<br><br>Would you like to restart and install it now?
-            </p>
+            <h3 style="color: #00ff88; font-size: 24px; margin-bottom: 10px;"><i class="fa-solid fa-circle-arrow-up"></i> Update Ready!</h3>
+            <p style="color: #bbbbc5; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">A new version has been downloaded.<br><br>Restart and install now?</p>
             <div class="modal-actions" style="justify-content: center; gap: 15px;">
                 <button id="update-later-btn" class="btn-secondary" style="width: 120px;">Later</button>
                 <button id="update-restart-btn" class="btn-primary" style="width: 150px;">Restart Now</button>

@@ -1,6 +1,6 @@
 {
   "name": "momo-launcher",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "A launcher for Momo",
   "main": "main.js",
   "scripts": {
@@ -32,11 +32,10 @@
     },
     "nsis": {
       "oneClick": false,
-      "perMachine": false,
-      "allowElevation": false,
-      "allowToChangeInstallationDirectory": false,
-      "artifactName": "MomoLauncher-Setup.${ext}",
-      "include": "installer.nsh"
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "MomoLauncher-Setup.${ext}"
     },
     "publish": [
       {
