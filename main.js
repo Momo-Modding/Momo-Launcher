@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -56,6 +57,14 @@ function createWindow() {
         webPreferences: { preload: path.join(__dirname, 'preload.js') }
     });
     win.loadFile('index.html');
+
+    win.once('ready-to-show', () => {
+        autoUpdater.checkForUpdatesAndNotify();
+    });
+
+    autoUpdater.on('update-downloaded', () => {
+        win.webContents.send('update-downloaded');
+    });
 }
 
 app.whenReady().then(createWindow);
@@ -284,4 +293,33 @@ ipcMain.handle('rename-instance', async (event, oldName, newName) => {
         saveState(state);
         return { success: true };
     } catch (error) { return { success: false, error: error.message }; }
+});
+
+ipcMain.handle('delete-instance', async (event, instanceName) => {
+    if (activeDownloads.has(instanceName)) return { success: false, error: "Cannot delete an instance while it is downloading." };
+    
+    let state = loadState();
+    
+    if (Object.keys(state.instances).length <= 1) {
+        return { success: false, error: "You cannot delete your only instance! Create a new one first." };
+    }
+
+    const instancePath = path.join(instancesDir, instanceName);
+
+    try {
+        if (fs.existsSync(instancePath)) fs.rmSync(instancePath, { recursive: true, force: true });
+
+        delete state.instances[instanceName];
+
+        if (state.activeInstance === instanceName) {
+            state.activeInstance = Object.keys(state.instances)[0];
+        }
+        
+        saveState(state);
+        return { success: true };
+    } catch (error) { return { success: false, error: error.message }; }
+});
+
+ipcMain.on('restart-app', () => {
+    autoUpdater.quitAndInstall();
 });

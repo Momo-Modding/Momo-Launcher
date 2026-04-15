@@ -16,6 +16,15 @@ const renameModal = document.getElementById('rename-modal');
 const renameNameInput = document.getElementById('rename-name-input');
 const renameCancelBtn = document.getElementById('rename-cancel-btn');
 const renameSubmitBtn = document.getElementById('rename-submit-btn');
+const deleteInstanceBtn = document.getElementById('delete-instance-btn');
+const updateAppBtn = document.getElementById('update-app-btn');
+const deleteModal = document.getElementById('delete-modal');
+const deleteTargetName = document.getElementById('delete-target-name');
+const deleteCancelBtn = document.getElementById('delete-cancel-btn');
+const deleteSubmitBtn = document.getElementById('delete-submit-btn');
+const alertModal = document.getElementById('alert-modal');
+const alertMessageText = document.getElementById('alert-message-text');
+const alertOkBtn = document.getElementById('alert-ok-btn');
 
 let appState = null;
 let githubDatabase = []; 
@@ -39,12 +48,32 @@ async function syncState() {
 function formatPlaytime(ms) { playtimeText.innerText = `${(ms / (1000 * 60 * 60)).toFixed(1)} hrs on record`; }
 function getActiveInstance() { return appState.instances[appState.activeInstance]; }
 
+function showCustomAlert(message) {
+    alertMessageText.innerText = message;
+    alertModal.style.display = 'flex';
+
+    setTimeout(() => alertOkBtn.focus(), 50); 
+}
+
+alertOkBtn.addEventListener('click', () => {
+    alertModal.style.display = 'none';
+});
+
 playBtn.addEventListener('click', () => { playBtn.innerText = "PLAYING..."; playBtn.disabled = true; window.electronAPI.launchGame(); });
 window.electronAPI.onGameClosed((e, time) => { playBtn.innerText = "PLAY GAME"; playBtn.disabled = false; getActiveInstance().playtime = time; formatPlaytime(time); });
 
 document.getElementById('open-folder-btn').addEventListener('click', async () => {
     const result = await window.electronAPI.openModsFolder();
-    if (!result.success) alert("The mods folder doesn't exist yet! Install BepInEx first.");
+    if (!result.success) showCustomAlert("The mods folder doesn't exist yet! Install BepInEx first.");
+});
+
+window.electronAPI.onUpdateDownloaded(() => {
+    updateAppBtn.style.display = 'inline-flex';
+});
+
+updateAppBtn.addEventListener('click', () => {
+    updateAppBtn.innerText = "RESTARTING...";
+    window.electronAPI.restartApp();
 });
 
 window.electronAPI.onDownloadProgress((e, data) => {
@@ -83,7 +112,7 @@ installGameBtn.addEventListener('click', async () => {
         await syncState(); 
         updateMainUI(); 
     } else { 
-        alert("Failed: " + result.error); 
+        showCustomAlert("Failed: " + result.error); 
         updateMainUI(); 
     }
 });
@@ -102,7 +131,7 @@ window.addEventListener('dragover', (e) => { e.preventDefault(); dropOverlay.sty
 window.addEventListener('dragleave', (e) => { e.preventDefault(); if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) dropOverlay.style.display = "none"; });
 window.addEventListener('drop', async (e) => {
     e.preventDefault(); dropOverlay.style.display = "none";
-    if (!getActiveInstance().bepinexInstalled) return alert("Install BepInEx first!");
+    if (!getActiveInstance().bepinexInstalled) return showCustomAlert("Install BepInEx first!");
     const file = e.dataTransfer.files[0];
     if (file && file.name.toLowerCase().endsWith('.zip')) {
         const result = await window.electronAPI.installLocalMod(file);
@@ -148,7 +177,7 @@ modalCreateBtn.addEventListener('click', async () => {
         if (result.success) {
             await syncState();
             renderInstances(); updateMainUI(); loadModsUI();
-        } else alert("Failed: " + result.error);
+        } else showCustomAlert("Failed: " + result.error);
     }
 });
 
@@ -180,7 +209,7 @@ renameSubmitBtn.addEventListener('click', async () => {
             updateMainUI(); 
             loadModsUI();
         } else {
-            alert("Failed: " + result.error);
+            showCustomAlert("Failed: " + result.error);
         }
     } else if (newName === oldName) {
         renameModal.style.display = 'none';
@@ -188,6 +217,42 @@ renameSubmitBtn.addEventListener('click', async () => {
 });
 
 renameNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') renameSubmitBtn.click(); });
+
+deleteInstanceBtn.addEventListener('click', () => {
+    if (Object.keys(appState.instances).length <= 1) {
+        return showCustomAlert("You must have at least one instance. Create a new one before deleting this one!");
+    }
+    
+    // Open our custom HTML modal instead of the Windows confirm box!
+    deleteTargetName.innerText = appState.activeInstance;
+    deleteModal.style.display = 'flex';
+});
+
+deleteCancelBtn.addEventListener('click', () => { 
+    deleteModal.style.display = 'none'; 
+});
+
+deleteSubmitBtn.addEventListener('click', async () => {
+    const target = appState.activeInstance;
+    
+    deleteSubmitBtn.disabled = true;
+    deleteSubmitBtn.innerText = "Deleting...";
+    
+    const result = await window.electronAPI.deleteInstance(target);
+    
+    deleteSubmitBtn.disabled = false;
+    deleteSubmitBtn.innerText = "Delete";
+    deleteModal.style.display = 'none';
+
+    if (result.success) {
+        await syncState();
+        renderInstances();
+        updateMainUI();
+        loadModsUI();
+    } else {
+        showCustomAlert("Failed to delete: " + result.error);
+    }
+});
 
 function updateMainUI() {
     const inst = getActiveInstance();
@@ -304,7 +369,7 @@ async function loadModsUI() {
         });
 
         document.querySelectorAll('.install-mod-btn, .update-mod-btn').forEach(btn => btn.addEventListener('click', (e) => {
-            if (!getActiveInstance().bepinexInstalled) return alert("Please install BepInEx first!");
+            if (!getActiveInstance().bepinexInstalled) return showCustomAlert("Please install BepInEx first!");
             e.target.innerText = "Working..."; e.target.disabled = true;
             handleInstallWithDependencies(e.target.getAttribute('data-id'));
         }));

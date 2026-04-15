@@ -19,10 +19,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     switchInstance: (name) => ipcRenderer.invoke('switch-instance', name),
     createInstance: (name) => ipcRenderer.invoke('create-instance', name),
     renameInstance: (oldName, newName) => ipcRenderer.invoke('rename-instance', oldName, newName),
+    deleteInstance: (name) => ipcRenderer.invoke('delete-instance', name),
 
     getState: () => ipcRenderer.invoke('get-state'),
     
     onGameClosed: (callback) => ipcRenderer.on('game-closed', callback),
     onDownloadProgress: (callback) => ipcRenderer.on('download-progress', callback),
-    onDownloadStatus: (callback) => ipcRenderer.on('download-status', callback)
+    onDownloadStatus: (callback) => ipcRenderer.on('download-status', callback),
+    onUpdateDownloaded: (callback) => ipcRenderer.on('update-downloaded', callback),
+    restartApp: () => ipcRenderer.send('restart-app')
 });

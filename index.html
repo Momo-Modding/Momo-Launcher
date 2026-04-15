@@ -96,14 +96,21 @@
         
         <aside class="sidebar">
             <h1>MOMO</h1>
+
+            <button id="update-app-btn" class="btn-primary" style="display: none; background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%); margin-bottom: 5px; color: black; box-shadow: 0 4px 15px rgba(255, 179, 71, 0.3);">
+                UPDATE READY! RESTART
+            </button>
             
             <div class="sidebar-section">
                 <label>Game Instance</label>
                 <select id="instance-select"></select>
-                <div style="display: flex; gap: 10px;">
-                    <button id="new-instance-btn" class="btn-secondary" style="flex-grow: 1;">+ New Instance</button>
-                    <button id="rename-instance-btn" class="btn-secondary" style="width: 46px; padding: 0;" title="Rename Instance">
+                <div style="display: grid; grid-template-columns: 1fr 46px 46px; gap: 10px;">
+                    <button id="new-instance-btn" class="btn-secondary" style="padding: 0 10px;">+ New</button>
+                    <button id="rename-instance-btn" class="btn-secondary" style="padding: 0;" title="Rename Instance">
                         <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button id="delete-instance-btn" class="btn-danger" style="padding: 0;" title="Delete Instance">
+                        <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
             </div>
@@ -156,6 +163,29 @@
             <div class="modal-actions">
                 <button id="rename-cancel-btn" class="btn-secondary">Cancel</button>
                 <button id="rename-submit-btn" class="btn-primary" style="padding: 0 24px;">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-content" style="border-color: #dc3545;">
+            <h3 style="color: #ff4d4d;">Delete Instance</h3>
+            <p style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;">
+                Are you sure you want to permanently delete <strong id="delete-target-name" style="color: white;"></strong>?<br><br>This will erase the game, mods, and your playtime.
+            </p>
+            <div class="modal-actions">
+                <button id="delete-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="delete-submit-btn" class="btn-danger" style="padding: 0 24px;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="alert-modal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content" style="border-color: #ff9900;">
+            <h3 style="color: #ffb347;"><i class="fa-solid fa-triangle-exclamation"></i> Notice</h3>
+            <p id="alert-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;"></p>
+            <div class="modal-actions">
+                <button id="alert-ok-btn" class="btn-primary" style="padding: 0 24px; width: 100%;">OK</button>
             </div>
         </div>
     </div>
