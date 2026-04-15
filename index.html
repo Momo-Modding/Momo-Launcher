@@ -96,10 +96,6 @@
         
         <aside class="sidebar">
             <h1>MOMO</h1>
-
-            <button id="update-app-btn" class="btn-primary" style="display: none; background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%); margin-bottom: 5px; color: black; box-shadow: 0 4px 15px rgba(255, 179, 71, 0.3);">
-                UPDATE READY! RESTART
-            </button>
             
             <div class="sidebar-section">
                 <label>Game Instance</label>
@@ -186,6 +182,21 @@
             <p id="alert-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;"></p>
             <div class="modal-actions">
                 <button id="alert-ok-btn" class="btn-primary" style="padding: 0 24px; width: 100%;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="update-modal" class="modal-overlay" style="z-index: 2500;">
+        <div class="modal-content" style="border-color: #00ff88; text-align: center;">
+            <h3 style="color: #00ff88; font-size: 24px; margin-bottom: 10px;">
+                <i class="fa-solid fa-circle-arrow-up"></i> Update Ready!
+            </h3>
+            <p style="color: #bbbbc5; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">
+                A new version of the Momo Launcher has been downloaded in the background.<br><br>Would you like to restart and install it now?
+            </p>
+            <div class="modal-actions" style="justify-content: center; gap: 15px;">
+                <button id="update-later-btn" class="btn-secondary" style="width: 120px;">Later</button>
+                <button id="update-restart-btn" class="btn-primary" style="width: 150px;">Restart Now</button>
             </div>
         </div>
     </div>

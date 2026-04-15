@@ -48,7 +48,7 @@ function loadState() {
 
 function saveState(state) { fs.writeFileSync(stateFilePath, JSON.stringify(state, null, 2)); }
 
-Menu.setApplicationMenu(null)
+Menu.setApplicationMenu(null);
 
 function createWindow() {
     const win = new BrowserWindow({
