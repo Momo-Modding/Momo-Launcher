@@ -32,8 +32,11 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "artifactName": "MomoLauncher-Setup.${ext}"
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
+      "artifactName": "MomoLauncher-Setup.${ext}",
+      "include": "installer.nsh"
     },
     "publish": [
       {
