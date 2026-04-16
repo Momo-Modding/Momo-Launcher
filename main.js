@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
@@ -7,9 +7,12 @@ const { spawn } = require('child_process');
 const axios = require('axios');
 const extract = require('extract-zip');
 const crypto = require('crypto');
+const { Tail } = require('tail');
+const archiver = require('archiver');
 
 const activeDownloads = new Set();
 const activeGames = {};
+let logWatcher = null;
 const DB_URL = "https://raw.githubusercontent.com/Momo-Modding/Momo-Mod-Database/main/mods.json";
 
 const DEFAULT_GAME_URL = "https://www.dropbox.com/scl/fi/dxz82r2igo2uqwatwkrjn/Momo.zip?rlkey=5ruwd7744z36gz74wnlo5dhjz&e=1&st=e8ns2tqy&dl=1";
@@ -28,7 +31,9 @@ function getPaths(state) {
     return {
         instancePath,
         gameExePath: path.join(instancePath, 'Momo.exe'),
-        bepinexPluginsDir: path.join(instancePath, 'BepInEx', 'plugins')
+        bepinexPluginsDir: path.join(instancePath, 'BepInEx', 'plugins'),
+        bepinexDisabledDir: path.join(instancePath, 'BepInEx', 'disabled_plugins'),
+        logPath: path.join(instancePath, 'BepInEx', 'LogOutput.log')
     };
 }
 
@@ -41,33 +46,33 @@ async function loadState() {
                 gameInstalled: state.gameInstalled || false,
                 bepinexInstalled: state.bepinexInstalled || false,
                 installedMods: state.installedMods || {},
-                playtime: state.playtime || 0
+                disabledMods: state.disabledMods || [],
+                playtime: state.playtime || 0,
+                launchArgs: "",
+                icon: ""
             };
             return newState;
         }
+        Object.values(state.instances).forEach(inst => {
+            if (!inst.disabledMods) inst.disabledMods = [];
+            if (!inst.launchArgs) inst.launchArgs = "";
+            if (!inst.icon) inst.icon = "";
+        });
         return state;
     }
     return { 
-        instances: { "Default": { gameInstalled: false, bepinexInstalled: false, installedMods: {}, playtime: 0 } }, 
+        instances: { "Default": { gameInstalled: false, bepinexInstalled: false, installedMods: {}, disabledMods: [], playtime: 0, launchArgs: "", icon: "" } }, 
         activeInstance: "Default" 
     };
 }
 
 async function saveState(state) {
     pendingState = state;
-    if (isSaving) {
-        pendingSave = true;
-        return;
-    }
+    if (isSaving) { pendingSave = true; return; }
     isSaving = true;
-    try {
-        await fsp.writeFile(stateFilePath, JSON.stringify(pendingState, null, 2));
-    } catch (error) {}
+    try { await fsp.writeFile(stateFilePath, JSON.stringify(pendingState, null, 2)); } catch (error) {}
     isSaving = false;
-    if (pendingSave) {
-        pendingSave = false;
-        saveState(pendingState);
-    }
+    if (pendingSave) { pendingSave = false; saveState(pendingState); }
 }
 
 async function fetchConfig() {
@@ -96,28 +101,33 @@ Menu.setApplicationMenu(null);
 
 function createWindow() {
     const win = new BrowserWindow({
-        width: 1050, height: 700,
+        width: 1200, 
+        height: 800,
+        minWidth: 1000,   
+        minHeight: 650,   
         icon: path.join(__dirname, 'images', 'logo.png'),
-        webPreferences: { preload: path.join(__dirname, 'preload.js') }
+        webPreferences: { 
+            preload: path.join(__dirname, 'preload.js'),
+            webSecurity: false
+        }
     });
     win.loadFile('index.html');
     win.once('ready-to-show', () => {
         autoUpdater.checkForUpdatesAndNotify();
         setInterval(() => autoUpdater.checkForUpdatesAndNotify(), 14400000);
     });
-    autoUpdater.on('update-downloaded', () => { win.webContents.send('update-downloaded'); });
+    autoUpdater.on('update-downloaded', () => win.webContents.send('update-downloaded'));
     autoUpdater.on('error', (error) => win.webContents.send('update-error', error.message));
     ipcMain.handle('check-for-updates', async () => {
         try {
             const result = await autoUpdater.checkForUpdatesAndNotify();
             return { success: !!result };
-        } catch (error) {
-            return { success: false, error: error.message };
-        }
+        } catch (error) { return { success: false, error: error.message }; }
     });
 }
 
 app.whenReady().then(createWindow);
+
 ipcMain.handle('get-state', () => loadState());
 
 ipcMain.handle('open-mods-folder', async () => {
@@ -134,14 +144,19 @@ ipcMain.on('launch-game', async (event) => {
     let state = await loadState();
     const instance = state.activeInstance;
     const { gameExePath } = getPaths(state);
+    
     if (fs.existsSync(gameExePath) && !activeGames[instance]) {
-        const game = spawn(gameExePath, [], { detached: false });
+        const argsStr = state.instances[instance].launchArgs || "";
+        const argsArray = argsStr.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(s => s.replace(/(^"|"$)/g, '')) || [];
+        
+        const game = spawn(gameExePath, argsArray, { detached: false });
         activeGames[instance] = setInterval(async () => {
             let freshState = await loadState();
             freshState.instances[instance].playtime += 10000;
             await saveState(freshState);
             event.sender.send('playtime-update', freshState.instances[instance].playtime);
         }, 10000);
+        
         game.on('exit', async () => {
             if (activeGames[instance]) {
                 clearInterval(activeGames[instance]);
@@ -151,6 +166,172 @@ ipcMain.on('launch-game', async (event) => {
             event.sender.send('game-closed', finalState.instances[instance].playtime);
         });
     }
+});
+
+ipcMain.handle('save-launch-args', async (event, args) => {
+    let state = await loadState();
+    state.instances[state.activeInstance].launchArgs = args;
+    await saveState(state);
+    return { success: true };
+});
+
+ipcMain.handle('set-icon', async (event, base64Data) => {
+    try {
+        let state = await loadState();
+        const iconsDir = path.join(userDataPath, 'Icons');
+        if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
+        
+        const base64Image = base64Data.split(';base64,').pop();
+        const destPath = path.join(iconsDir, `${state.activeInstance}_${Date.now()}.png`);
+        
+        const oldIcon = state.instances[state.activeInstance].icon;
+        if (oldIcon && fs.existsSync(oldIcon)) {
+            try { await fsp.unlink(oldIcon); } catch(err) {}
+        }
+
+        await fsp.writeFile(destPath, base64Image, { encoding: 'base64' });
+        
+        state.instances[state.activeInstance].icon = destPath;
+        await saveState(state);
+        return { success: true, iconPath: destPath };
+    } catch (e) { return { success: false, error: e.message }; }
+});
+
+ipcMain.handle('export-instance', async (event, instanceName) => {
+    try {
+        let state = await loadState();
+        if (!state.instances[instanceName]) return { success: false, error: "Instance not found." };
+        
+        const { canceled, filePath } = await dialog.showSaveDialog({
+            title: 'Export Instance',
+            defaultPath: `${instanceName}.zip`,
+            filters: [{ name: 'Zip Archives', extensions: ['zip'] }]
+        });
+
+        if (canceled || !filePath) return { success: false, canceled: true };
+
+        const instancePath = path.join(instancesDir, instanceName);
+        const instState = state.instances[instanceName];
+
+        await new Promise((resolve, reject) => {
+            const output = fs.createWriteStream(filePath);
+            const archive = archiver('zip', { zlib: { level: 1 } });
+
+            output.on('close', resolve);
+            archive.on('error', reject);
+
+            archive.pipe(output);
+            archive.directory(instancePath, false);
+
+            // Inject the manifest metadata into the ZIP
+            const manifest = {
+                installedMods: instState.installedMods || {},
+                disabledMods: instState.disabledMods || [],
+                launchArgs: instState.launchArgs || ""
+            };
+            archive.append(JSON.stringify(manifest, null, 2), { name: 'momo_manifest.json' });
+
+            // Inject the custom icon into the ZIP if one exists
+            if (instState.icon && fs.existsSync(instState.icon)) {
+                archive.file(instState.icon, { name: 'momo_icon.png' });
+            }
+
+            archive.finalize();
+        });
+
+        return { success: true, path: filePath };
+    } catch (error) { 
+        return { success: false, error: error.message }; 
+    }
+});
+
+ipcMain.handle('import-instance', async (event, zipPath) => {
+    try {
+        let state = await loadState();
+        let baseName = path.basename(zipPath, '.zip');
+        let newName = baseName;
+        let counter = 1;
+        while(state.instances[newName]) { newName = `${baseName} (${counter++})`; }
+        
+        const newInstPath = path.join(instancesDir, newName);
+        fs.mkdirSync(newInstPath, { recursive: true });
+        await extract(zipPath, { dir: newInstPath });
+        
+        const gameInst = fs.existsSync(path.join(newInstPath, 'Momo.exe'));
+        const bepInst = fs.existsSync(path.join(newInstPath, 'BepInEx'));
+        
+        let mods = {};
+        let disabledMods = [];
+        let launchArgs = "";
+        let iconPath = "";
+
+        const manifestPath = path.join(newInstPath, 'momo_manifest.json');
+        const exportedIconPath = path.join(newInstPath, 'momo_icon.png');
+
+        // Restore Metadata
+        if (fs.existsSync(manifestPath)) {
+            const manifest = JSON.parse(await fsp.readFile(manifestPath, 'utf8'));
+            mods = manifest.installedMods || {};
+            disabledMods = manifest.disabledMods || [];
+            launchArgs = manifest.launchArgs || "";
+            await fsp.unlink(manifestPath); // Clean up the temp manifest
+        } else {
+            // Fallback for older exports without a manifest
+            const pluginsDir = path.join(newInstPath, 'BepInEx', 'plugins');
+            if (fs.existsSync(pluginsDir)) {
+                const folders = fs.readdirSync(pluginsDir, {withFileTypes: true});
+                folders.forEach(dirent => { if(dirent.isDirectory()) mods[dirent.name] = "local"; });
+            }
+        }
+
+        // Restore Custom Icon
+        if (fs.existsSync(exportedIconPath)) {
+            const iconsDir = path.join(userDataPath, 'Icons');
+            if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
+            
+            iconPath = path.join(iconsDir, `${newName}_${Date.now()}.png`);
+            await fsp.copyFile(exportedIconPath, iconPath);
+            await fsp.unlink(exportedIconPath); // Clean up the temp icon
+        }
+
+        state.instances[newName] = {
+            gameInstalled: gameInst,
+            bepinexInstalled: bepInst,
+            installedMods: mods,
+            disabledMods: disabledMods,
+            playtime: 0,
+            launchArgs: launchArgs,
+            icon: iconPath
+        };
+        state.activeInstance = newName;
+        await saveState(state);
+        return { success: true };
+    } catch(e) { return { success: false, error: e.message }; }
+});
+
+ipcMain.on('watch-log', async (event) => {
+    let state = await loadState();
+    const { logPath } = getPaths(state);
+    
+    if (logWatcher) { logWatcher.unwatch(); logWatcher = null; }
+    
+    event.sender.send('log-clear'); 
+    
+    if (fs.existsSync(logPath)) {
+        logWatcher = new Tail(logPath, { 
+            fromBeginning: true, 
+            useWatchFile: true, 
+            fsWatchOptions: { interval: 250 } 
+        });
+        logWatcher.on("line", (data) => event.sender.send('log-update', data));
+        logWatcher.on("error", (error) => console.log('ERROR: ', error));
+    } else {
+        event.sender.send('log-update', "[System] Log file not found. Launch the game first.");
+    }
+});
+
+ipcMain.on('stop-log', () => {
+    if (logWatcher) { logWatcher.unwatch(); logWatcher = null; }
 });
 
 ipcMain.handle('install-game', async (event, targetInstance) => {
@@ -203,6 +384,7 @@ ipcMain.handle('uninstall-game', async () => {
         state.instances[state.activeInstance].gameInstalled = false;
         state.instances[state.activeInstance].bepinexInstalled = false;
         state.instances[state.activeInstance].installedMods = {};
+        state.instances[state.activeInstance].disabledMods = [];
         await saveState(state);
         return { success: true };
     } catch (error) { return { success: false, error: error.message }; }
@@ -234,6 +416,7 @@ ipcMain.handle('uninstall-bepinex', async () => {
         if (fs.existsSync(bepinexFolder)) fs.rmSync(bepinexFolder, { recursive: true, force: true });
         state.instances[state.activeInstance].bepinexInstalled = false;
         state.instances[state.activeInstance].installedMods = {}; 
+        state.instances[state.activeInstance].disabledMods = [];
         await saveState(state);
         return { success: true };
     } catch (error) { return { success: false, error: error.message }; }
@@ -253,6 +436,7 @@ ipcMain.handle('install-mod', async (event, modId, downloadUrl, version) => {
         await extract(tempZipPath, { dir: specificModDir });
         fs.unlinkSync(tempZipPath);
         state.instances[state.activeInstance].installedMods[modId] = version;
+        state.instances[state.activeInstance].disabledMods = state.instances[state.activeInstance].disabledMods.filter(id => id !== modId);
         await saveState(state);
         return { success: true };
     } catch (error) { return { success: false, error: error.message }; }
@@ -267,18 +451,47 @@ ipcMain.handle('install-local-mod', async (event, filePath) => {
         if (!fs.existsSync(specificModDir)) fs.mkdirSync(specificModDir, { recursive: true });
         await extract(filePath, { dir: specificModDir });
         state.instances[state.activeInstance].installedMods[modId] = "local"; 
+        state.instances[state.activeInstance].disabledMods = state.instances[state.activeInstance].disabledMods.filter(id => id !== modId);
         await saveState(state);
         return { success: true, modId: modId };
+    } catch (error) { return { success: false, error: error.message }; }
+});
+
+ipcMain.handle('toggle-mod', async (event, modId, disable) => {
+    try {
+        let state = await loadState();
+        const { bepinexPluginsDir, bepinexDisabledDir } = getPaths(state);
+        if (!fs.existsSync(bepinexDisabledDir)) fs.mkdirSync(bepinexDisabledDir, { recursive: true });
+
+        const activePath = path.join(bepinexPluginsDir, modId);
+        const disabledPath = path.join(bepinexDisabledDir, modId);
+
+        const instState = state.instances[state.activeInstance];
+
+        if (disable) {
+            if (fs.existsSync(activePath)) await fsp.rename(activePath, disabledPath);
+            if (!instState.disabledMods.includes(modId)) instState.disabledMods.push(modId);
+        } else {
+            if (fs.existsSync(disabledPath)) await fsp.rename(disabledPath, activePath);
+            instState.disabledMods = instState.disabledMods.filter(id => id !== modId);
+        }
+        await saveState(state);
+        return { success: true };
     } catch (error) { return { success: false, error: error.message }; }
 });
 
 ipcMain.handle('uninstall-mod', async (event, modId) => {
     try {
         let state = await loadState();
-        const { bepinexPluginsDir } = getPaths(state);
-        const modFolder = path.join(bepinexPluginsDir, modId);
-        if (fs.existsSync(modFolder)) fs.rmSync(modFolder, { recursive: true, force: true });
+        const { bepinexPluginsDir, bepinexDisabledDir } = getPaths(state);
+        const activeFolder = path.join(bepinexPluginsDir, modId);
+        const disabledFolder = path.join(bepinexDisabledDir, modId);
+        
+        if (fs.existsSync(activeFolder)) fs.rmSync(activeFolder, { recursive: true, force: true });
+        if (fs.existsSync(disabledFolder)) fs.rmSync(disabledFolder, { recursive: true, force: true });
+        
         delete state.instances[state.activeInstance].installedMods[modId];
+        state.instances[state.activeInstance].disabledMods = state.instances[state.activeInstance].disabledMods.filter(id => id !== modId);
         await saveState(state);
         return { success: true };
     } catch (error) { return { success: false, error: error.message }; }
@@ -297,7 +510,7 @@ ipcMain.handle('switch-instance', async (event, name) => {
 ipcMain.handle('create-instance', async (event, name) => {
     let state = await loadState();
     if (state.instances[name]) return { success: false, error: "Instance exists" };
-    state.instances[name] = { gameInstalled: false, bepinexInstalled: false, installedMods: {}, playtime: 0 };
+    state.instances[name] = { gameInstalled: false, bepinexInstalled: false, installedMods: {}, disabledMods: [], playtime: 0, launchArgs: "", icon: "" };
     state.activeInstance = name;
     await saveState(state);
     return { success: true };

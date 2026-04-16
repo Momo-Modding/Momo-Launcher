@@ -7,125 +7,271 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background-color: #0d0d12; color: #e0e0e0; overflow-x: hidden; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #0b0b0f; color: #e0e0e0; }
 
+        /* FLUID & RESPONSIVE GRID CONFIGURATION */
         .app-container { 
-            max-width: 1200px; margin: 0 auto; padding: 30px; 
-            display: grid; grid-template-columns: 300px 1fr; gap: 40px; min-height: 100vh; align-items: start; 
+            width: 100%; 
+            height: 100%; 
+            padding: 30px 40px; 
+            display: grid; 
+            grid-template-columns: 320px minmax(0, 1fr); 
+            gap: 30px; 
         }
 
         .sidebar { 
-            display: flex; flex-direction: column; gap: 25px; background: #15151e; 
-            padding: 30px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); 
-            border: 1px solid #262635; position: sticky; top: 30px; 
+            display: flex; flex-direction: column; gap: 20px; background: #121218; 
+            padding: 25px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); 
+            border: 1px solid #20202b; height: 100%; overflow-y: auto;
         }
 
-        .sidebar h1 { font-weight: 800; font-size: 32px; letter-spacing: 2px; color: #ffffff; text-align: center; margin-bottom: 10px; }
+        .sidebar h1 { font-weight: 800; font-size: 32px; letter-spacing: 2px; color: #ffffff; text-align: center; margin-bottom: 5px; text-shadow: 0 2px 10px rgba(0,255,136,0.2); }
         .sidebar-section { display: flex; flex-direction: column; gap: 12px; }
-        .sidebar-section.bottom-anchored { margin-top: 20px; padding-top: 25px; border-top: 1px solid #262635; }
-        .sidebar label { font-size: 12px; color: #a0a0b5; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .sidebar-section.bottom-anchored { margin-top: auto; padding-top: 20px; border-top: 1px solid #20202b; }
+        .sidebar label { font-size: 11px; color: #8a8a9d; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+
+        .instance-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; background: #1a1a24; padding: 10px; border-radius: 12px; border: 1px solid #2a2a35; }
+        
+        .instance-icon-wrapper { 
+            position: relative; 
+            width: 50px; 
+            height: 50px; 
+            min-width: 50px;
+            max-width: 50px;
+            border-radius: 10px; 
+            background: #262635; 
+            overflow: hidden; 
+            cursor: pointer; 
+            display: block;
+            flex-shrink: 0; 
+            transition: border-color 0.2s; 
+            border: 2px solid transparent; 
+        }
+        
+        .instance-icon-wrapper i { 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px; 
+            color: #a0a0b5; 
+        }
+        
+        .instance-icon-wrapper img { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            display: none; 
+            z-index: 1;
+        }
+
+        .instance-icon-wrapper:hover { border-color: #00ff88; }
+        .instance-icon-wrapper:hover::after { 
+            content: "\f03e"; 
+            font-family: "Font Awesome 6 Free"; 
+            font-weight: 900; 
+            position: absolute; 
+            inset: 0; 
+            background: rgba(0,0,0,0.7); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            color: white; 
+            font-size: 18px; 
+            z-index: 2; 
+        }
+
+        .custom-select-container { position: relative; width: 100%; user-select: none; }
+        .custom-select-trigger { background-color: transparent; color: #fff; padding: 10px 15px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: color 0.2s; }
+        .custom-select-trigger:hover { color: #00ff88; }
+        .custom-select-trigger i { font-size: 12px; color: #a0a0b5; transition: transform 0.2s; }
+        .custom-select-container.open .custom-select-trigger i { transform: rotate(180deg); }
+        .custom-select-options { position: absolute; top: 100%; left: 0; right: 0; background-color: #1a1a24; border: 1px solid #3e3e4f; border-radius: 8px; z-index: 99; margin-top: 8px; display: none; flex-direction: column; max-height: 200px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .custom-select-container.open .custom-select-options { display: flex; }
+        .custom-select-option { padding: 12px 15px; color: #a0a0b5; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; border-bottom: 1px solid #20202b; }
+        .custom-select-option:last-child { border-bottom: none; }
+        .custom-select-option:hover { background-color: #262635; color: #fff; }
+        .custom-select-option.selected { color: #00ff88; background-color: rgba(0, 255, 136, 0.05); }
 
         button { 
-            font-family: 'Inter', sans-serif; font-weight: 600; height: 46px; width: 100%; 
-            padding: 0 20px; display: inline-flex; align-items: center; justify-content: center;
+            font-family: 'Inter', sans-serif; font-weight: 600; height: 40px; width: 100%; 
+            padding: 0 15px; display: inline-flex; align-items: center; justify-content: center;
             border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease; 
-            text-transform: uppercase; font-size: 13px; letter-spacing: 1px; white-space: nowrap; 
+            text-transform: uppercase; font-size: 12px; letter-spacing: 1px; white-space: nowrap; 
         }
-        button:disabled { cursor: not-allowed; opacity: 0.6; }
+        button:disabled { cursor: not-allowed; opacity: 0.5; filter: grayscale(1); }
 
-        .btn-primary { background: linear-gradient(135deg, #00ff88 0%, #00b35f 100%); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3); font-size: 14px;}
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5); }
-        .btn-secondary { background: transparent; color: #fff; border: 1px solid #3e3e4f; }
-        .btn-secondary:hover { background: #2a2a35; border-color: #55556b; }
+        .btn-primary { background: linear-gradient(135deg, #00ff88 0%, #00b35f 100%); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4); }
+        .btn-secondary { background: #1a1a24; color: #fff; border: 1px solid #2a2a35; }
+        .btn-secondary:hover:not(:disabled) { background: #262635; border-color: #3e3e4f; }
         .btn-danger { background: rgba(220, 53, 69, 0.1); color: #ff4d4d; border: 1px solid rgba(220, 53, 69, 0.3); }
-        .btn-danger:hover { background: #dc3545; color: white; }
+        .btn-danger:hover:not(:disabled) { background: #dc3545; color: white; }
         .btn-install { background: #007bff; color: white; }
-        .btn-install:hover { background: #0056b3; }
+        .btn-install:hover:not(:disabled) { background: #0056b3; }
+        .btn-warning { background: #ff9900; color: #000; }
+        .btn-warning:hover:not(:disabled) { background: #e68a00; }
 
-        select { 
-            background-color: #1e1e28; 
-            color: #fff; 
-            padding: 12px 40px 12px 15px; 
-            border: 1px solid #3e3e4f; 
-            border-radius: 8px; 
-            font-family: 'Inter', sans-serif; 
-            outline: none; 
-            cursor: pointer; 
-            font-weight: 600; 
-            width: 100%;
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a0a0b5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            background-size: 16px;
+        input[type="text"] { 
+            background-color: #0b0b0f; color: #fff; padding: 10px 15px; border: 1px solid #2a2a35; 
+            border-radius: 8px; font-family: 'Inter', sans-serif; outline: none; width: 100%; font-size: 13px;
+            transition: border-color 0.2s; min-width: 0;
         }
+        input[type="text"]:focus { border-color: #00ff88; }
 
-        .playtime-display { font-size: 13px; color: #a0a0b5; text-align: center; margin-bottom: 5px; }
+        .playtime-display { font-size: 12px; color: #8a8a9d; text-align: center; margin-bottom: 5px; font-weight: 600; }
 
-        h2 { font-size: 20px; font-weight: 600; color: #a0a0b5; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;}
-        .mod-stack { display: flex; flex-direction: column; gap: 15px; }
-        .mod-card { background: #15151e; border: 1px solid #262635; border-radius: 12px; padding: 25px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
-        .mod-card:hover { transform: translateX(5px); border-color: #3e3e4f; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
-        .mod-card h3 { font-size: 20px; margin-bottom: 5px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-        .mod-card h3 small { font-size: 12px; background: #262635; padding: 4px 8px; border-radius: 6px; color: #a0a0b5; }
-        .mod-card .author { font-size: 14px; color: #78788f; margin-bottom: 15px; }
-        .mod-card .desc { font-size: 15px; line-height: 1.6; color: #bbbbc5; flex-grow: 1; margin-bottom: 20px; }
-        .mod-card-actions { display: flex; gap: 15px; margin-top: auto; padding-top: 15px; }
-        .mod-card-actions button { flex: 1; }
-        .btn-update { background: #ff9900; color: #000; }
-        .btn-update:hover { background: #e68a00; }
+        main { display: flex; flex-direction: column; height: 100%; background: #121218; border-radius: 16px; border: 1px solid #20202b; padding: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); min-height: 0; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #20202b; padding-bottom: 15px; margin-bottom: 20px; flex-shrink: 0; }
+        
+        .tabs { display: flex; gap: 25px; }
+        .tab-btn { background: transparent; border: none; color: #6b6b80; font-size: 15px; font-weight: 800; cursor: pointer; padding: 0 0 10px 0; border-bottom: 3px solid transparent; text-transform: uppercase; letter-spacing: 2px; width: auto; height: auto; border-radius: 0; transition: color 0.2s; }
+        .tab-btn.active { color: #00ff88; border-bottom-color: #00ff88; }
+        .tab-btn:hover:not(.active) { color: #fff; }
 
-        #drop-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 255, 136, 0.2); backdrop-filter: blur(5px); z-index: 9999; border: 4px dashed #00ff88; justify-content: center; align-items: center; pointer-events: none; }
-        #drop-overlay h1 { color: #00ff88; font-size: 40px; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
-        .modal-content { background: #15151e; padding: 30px; border-radius: 12px; width: 400px; border: 1px solid #3e3e4f; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
-        .modal-content h3 { margin-bottom: 20px; color: #fff; font-size: 20px; }
-        .modal-content input { width: 100%; padding: 14px; background: #0d0d12; border: 1px solid #3e3e4f; color: white; border-radius: 8px; margin-bottom: 20px; font-family: 'Inter'; font-size: 15px; outline: none; user-select: text; -webkit-user-select: text; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .tools-group { display: flex; gap: 10px; }
+        .btn-tool { width: auto; padding: 0 15px; height: 34px; font-size: 11px; }
+        .btn-icon { width: 34px; padding: 0; font-size: 14px; }
+
+        .view-section { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; }
+        .view-section.active { display: flex; }
+        
+        .search-box { display: flex; width: 100%; margin-bottom: 15px; flex-shrink: 0; }
+        .search-box input { background: #1a1a24; }
+        
+        .mod-stack { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 10px; flex-grow: 1; min-height: 0; }
+        .mod-card { background: #1a1a24; border: 1px solid #2a2a35; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; flex-shrink: 0; }
+        .mod-card.disabled { opacity: 0.6; border-style: dashed; }
+        .mod-card:hover { transform: translateX(4px); border-color: #3e3e4f; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .mod-card h3 { font-size: 16px; margin-bottom: 4px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .mod-card h3 small { font-size: 11px; background: #262635; padding: 3px 8px; border-radius: 6px; color: #a0a0b5; }
+        .mod-card .author { font-size: 12px; color: #78788f; margin-bottom: 8px; }
+        .mod-card .desc { font-size: 13px; line-height: 1.5; color: #bbbbc5; flex-grow: 1; margin-bottom: 15px; }
+        .mod-card-actions { display: flex; gap: 10px; margin-top: auto; }
+        .mod-card-actions button { flex: 1; height: 34px; font-size: 11px; }
+
+        .console-output { background: #0b0b0f; border: 1px solid #20202b; border-radius: 12px; padding: 15px; font-family: 'Consolas', monospace; font-size: 12px; color: #00ff88; overflow-y: auto; flex-grow: 1; min-height: 0; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+
+        #drop-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 255, 136, 0.15); backdrop-filter: blur(8px); z-index: 9999; border: 4px dashed #00ff88; justify-content: center; align-items: center; pointer-events: none; }
+        #drop-overlay h1 { color: #00ff88; font-size: 40px; text-shadow: 0 4px 20px rgba(0,255,136,0.5); }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #121218; padding: 30px; border-radius: 16px; width: 400px; border: 1px solid #2a2a35; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal-content h3 { margin-bottom: 20px; color: #fff; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
         .modal-actions button { width: auto; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0d0d12; }
-        ::-webkit-scrollbar-thumb { background: #262635; border-radius: 4px; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3e3e4f; }
+
+        @media (max-width: 1100px) {
+            .app-container {
+                padding: 20px;
+                gap: 20px;
+                grid-template-columns: 280px minmax(0, 1fr);
+            }
+            .sidebar, main {
+                padding: 18px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="drop-overlay"><h1>DROP .ZIP TO INSTALL</h1></div>
 
+    <input type="file" id="icon-file-input" accept="image/*" style="display: none;">
+    <input type="file" id="import-zip-input" accept=".zip" style="display: none;">
+
     <div class="app-container">
         <aside class="sidebar">
             <h1>MOMO</h1>
+            
             <div class="sidebar-section">
-                <label>Game Instance</label>
-                <select id="instance-select"></select>
-                <div style="display: grid; grid-template-columns: 1fr 46px 46px; gap: 10px;">
-                    <button id="new-instance-btn" class="btn-secondary" style="padding: 0 10px;">+ New</button>
-                    <button id="rename-instance-btn" class="btn-secondary" style="padding: 0;" title="Rename Instance"><i class="fa-solid fa-pen"></i></button>
-                    <button id="delete-instance-btn" class="btn-danger" style="padding: 0;" title="Delete Instance"><i class="fa-solid fa-trash-can"></i></button>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label>Active Instance</label>
+                    <span style="font-size: 10px; color: #6b6b80; font-weight: 600; cursor: help;" title="Images will be auto-scaled. We recommend a 1:1 aspect ratio (e.g., 256x256)."><i class="fa-solid fa-circle-info"></i> Rec: 256x256</span>
+                </div>
+                
+                <div class="instance-header">
+                    <div class="instance-icon-wrapper" id="instance-icon-btn" title="Upload Custom Icon">
+                        <i class="fa-solid fa-cube" id="default-icon"></i>
+                        <img id="custom-icon" src="" alt="icon">
+                    </div>
+                    <div style="flex-grow: 1; min-width: 0;">
+                        <div class="custom-select-container" id="custom-select-container">
+                            <div class="custom-select-trigger" id="instance-selected">
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Loading...</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div class="custom-select-options" id="instance-options">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button id="new-instance-btn" class="btn-secondary"><i class="fa-solid fa-plus" style="margin-right: 8px;"></i>New</button>
+                    <button id="trigger-import-btn" class="btn-secondary"><i class="fa-solid fa-file-zipper" style="margin-right: 8px;"></i>Import</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <button id="rename-instance-btn" class="btn-secondary" style="padding: 0 5px;">Rename</button>
+                    <button id="export-instance-btn" class="btn-secondary" style="padding: 0 5px;">Export</button>
+                    <button id="delete-instance-btn" class="btn-danger" style="padding: 0 5px;">Delete</button>
                 </div>
             </div>
+
             <div class="sidebar-section">
-                <label>Settings & Files</label>
-                <button id="check-updates-btn" class="btn-secondary">Check for Updates</button>
-                <button id="bepinex-btn" class="btn-secondary">Install BepInEx</button>
-                <button id="uninstall-bepinex-btn" class="btn-danger" style="display: none;">Uninstall BepInEx</button>
-                <button id="open-folder-btn" class="btn-secondary">Open Mods Folder</button>
+                <label>Launch Arguments</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="launch-args-input" placeholder="-windowed -screen-width 1920">
+                    <button id="save-args-btn" class="btn-secondary" style="width: 40px; padding: 0; flex-shrink: 0;" title="Save Arguments"><i class="fa-solid fa-save"></i></button>
+                </div>
             </div>
+
             <div class="sidebar-section bottom-anchored">
                 <div id="playtime-text" class="playtime-display">0.0 hrs on record</div>
-                <button id="install-game-btn" class="btn-install">INSTALL GAME</button>
-                <div id="progress-container" style="display: none; width: 100%; background: #262635; border-radius: 6px; overflow: hidden; margin-top: 10px;">
-                    <div id="progress-bar" style="width: 0%; height: 6px; background: #00ff88; transition: width 0.1s linear;"></div>
+                <button id="install-game-btn" class="btn-install" style="height: 48px; font-size: 14px;">INSTALL GAME</button>
+                <div id="progress-container" style="display: none; width: 100%; background: #20202b; border-radius: 6px; overflow: hidden; margin-top: 10px; height: 6px;">
+                    <div id="progress-bar" style="width: 0%; height: 100%; background: #00ff88; transition: width 0.1s linear;"></div>
                 </div>
                 <div id="play-group" style="display: none; gap: 10px;">
-                    <button id="play-btn" class="btn-primary" style="flex-grow: 1;">PLAY GAME</button>
-                    <button id="uninstall-game-btn" class="btn-danger" style="width: 46px; padding: 0; font-size: 18px;" title="Uninstall Instance"><i class="fa-regular fa-trash-can"></i></button>
+                    <button id="play-btn" class="btn-primary" style="flex-grow: 1; height: 48px; font-size: 15px; font-weight: 800;">PLAY GAME</button>
+                    <button id="uninstall-game-btn" class="btn-danger" style="width: 48px; height: 48px; padding: 0; flex-shrink: 0; font-size: 18px;" title="Uninstall Instance"><i class="fa-regular fa-trash-can"></i></button>
                 </div>
             </div>
         </aside>
+
         <main>
-            <h2>Available Mods</h2>
-            <div id="mod-list" class="mod-stack">Loading mods...</div>
+            <header class="top-bar">
+                <div class="tabs">
+                    <button id="tab-mods" class="tab-btn active">Mods</button>
+                    <button id="tab-console" class="tab-btn">Console</button>
+                </div>
+                <div class="tools-group">
+                    <button id="bepinex-btn" class="btn-secondary btn-tool">Install BepInEx</button>
+                    <button id="uninstall-bepinex-btn" class="btn-danger btn-tool" style="display: none;">Uninstall BepInEx</button>
+                    <div style="width: 1px; background: #20202b; margin: 0 5px;"></div>
+                    <button id="open-folder-btn" class="btn-secondary btn-tool btn-icon" title="Open Mods Folder"><i class="fa-solid fa-folder-open"></i></button>
+                    <button id="check-updates-btn" class="btn-secondary btn-tool btn-icon" title="Check for Launcher Updates"><i class="fa-solid fa-arrows-rotate"></i></button>
+                </div>
+            </header>
+
+            <div id="view-mods" class="view-section active">
+                <div class="search-box">
+                    <input type="text" id="mod-search-input" placeholder="Search for mods by name or description...">
+                </div>
+                <div id="mod-list" class="mod-stack">Loading mods...</div>
+            </div>
+
+            <div id="view-console" class="view-section">
+                <div id="console-output" class="console-output">Waiting for game to launch...</div>
+            </div>
         </main>
     </div>
 
@@ -135,7 +281,7 @@
             <input type="text" id="instance-name-input" placeholder="e.g., Kaizo Momo" autocomplete="off">
             <div class="modal-actions">
                 <button id="modal-cancel-btn" class="btn-secondary">Cancel</button>
-                <button id="modal-create-btn" class="btn-primary" style="padding: 0 24px;">Create Instance</button>
+                <button id="modal-create-btn" class="btn-primary" style="padding: 0 24px;">Create</button>
             </div>
         </div>
     </div>
@@ -154,7 +300,7 @@
     <div id="delete-modal" class="modal-overlay">
         <div class="modal-content" style="border-color: #dc3545;">
             <h3 style="color: #ff4d4d;">Delete Instance</h3>
-            <p style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;">Are you sure you want to permanently delete <strong id="delete-target-name" style="color: white;"></strong>?<br><br>This will erase the game, mods, and your playtime.</p>
+            <p style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 14px;">Are you sure you want to permanently delete <strong id="delete-target-name" style="color: white;"></strong>?<br><br>This will erase the game, mods, and your playtime.</p>
             <div class="modal-actions">
                 <button id="delete-cancel-btn" class="btn-secondary">Cancel</button>
                 <button id="delete-submit-btn" class="btn-danger" style="padding: 0 24px;">Delete</button>
@@ -163,9 +309,9 @@
     </div>
 
     <div id="alert-modal" class="modal-overlay" style="z-index: 2000;">
-        <div class="modal-content" style="border-color: #ff9900;">
-            <h3 style="color: #ffb347;"><i class="fa-solid fa-triangle-exclamation"></i> Notice</h3>
-            <p id="alert-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;"></p>
+        <div class="modal-content" style="border-color: #00ff88; box-shadow: 0 20px 50px rgba(0,255,136,0.1);">
+            <h3 style="color: #00ff88;"><i class="fa-solid fa-circle-info"></i> Notice</h3>
+            <p id="alert-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 14px;"></p>
             <div class="modal-actions">
                 <button id="alert-ok-btn" class="btn-primary" style="padding: 0 24px; width: 100%;">OK</button>
             </div>
@@ -173,12 +319,12 @@
     </div>
 
     <div id="confirm-modal" class="modal-overlay" style="z-index: 2100;">
-        <div class="modal-content" style="border-color: #007bff;">
-            <h3 style="color: #007bff;"><i class="fa-solid fa-circle-question"></i> Confirm Action</h3>
-            <p id="confirm-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 15px;"></p>
+        <div class="modal-content" style="border-color: #ffb347;">
+            <h3 style="color: #ffb347;"><i class="fa-solid fa-circle-question"></i> Confirm Action</h3>
+            <p id="confirm-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 14px;"></p>
             <div class="modal-actions">
                 <button id="confirm-cancel-btn" class="btn-secondary">Cancel</button>
-                <button id="confirm-yes-btn" class="btn-primary" style="padding: 0 24px;">Confirm</button>
+                <button id="confirm-yes-btn" class="btn-primary" style="padding: 0 24px; background: linear-gradient(135deg, #ffb347 0%, #ff9900 100%);">Confirm</button>
             </div>
         </div>
     </div>
@@ -186,7 +332,7 @@
     <div id="update-modal" class="modal-overlay" style="z-index: 2500;">
         <div class="modal-content" style="border-color: #00ff88; text-align: center;">
             <h3 style="color: #00ff88; font-size: 24px; margin-bottom: 10px;"><i class="fa-solid fa-circle-arrow-up"></i> Update Ready!</h3>
-            <p style="color: #bbbbc5; line-height: 1.6; font-size: 15px; margin-bottom: 25px;">A new version has been downloaded.<br><br>Restart and install now?</p>
+            <p style="color: #bbbbc5; line-height: 1.6; font-size: 14px; margin-bottom: 25px;">A new version of the launcher has been downloaded.<br><br>Restart and install now?</p>
             <div class="modal-actions" style="justify-content: center; gap: 15px;">
                 <button id="update-later-btn" class="btn-secondary" style="width: 120px;">Later</button>
                 <button id="update-restart-btn" class="btn-primary" style="width: 150px;">Restart Now</button>
