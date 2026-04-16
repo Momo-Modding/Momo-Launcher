@@ -116,12 +116,11 @@
         .btn-warning { background: #ff9900; color: #000; }
         .btn-warning:hover:not(:disabled) { background: #e68a00; }
 
-        input[type="text"] { 
-            background-color: #0b0b0f; color: #fff; padding: 10px 15px; border: 1px solid #2a2a35; 
-            border-radius: 8px; font-family: 'Inter', sans-serif; outline: none; width: 100%; font-size: 13px;
-            transition: border-color 0.2s; min-width: 0;
-        }
-        input[type="text"]:focus { border-color: #00ff88; }
+        /* INSTANCE STATS DASHBOARD STYLES */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .stat-box { background: #1a1a24; border: 1px solid #2a2a35; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .stat-value { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+        .stat-label { font-size: 10px; color: #8a8a9d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
         .playtime-display { font-size: 12px; color: #8a8a9d; text-align: center; margin-bottom: 5px; font-weight: 600; }
 
@@ -142,7 +141,8 @@
         .view-section.active { display: flex; }
         
         .search-box { display: flex; width: 100%; margin-bottom: 15px; flex-shrink: 0; }
-        .search-box input { background: #1a1a24; }
+        .search-box input { background: #1a1a24; color: #fff; padding: 10px 15px; border: 1px solid #2a2a35; border-radius: 8px; font-family: 'Inter', sans-serif; outline: none; width: 100%; font-size: 13px; transition: border-color 0.2s; min-width: 0; }
+        .search-box input:focus { border-color: #00ff88; }
         
         .mod-stack { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 10px; flex-grow: 1; min-height: 0; }
         .mod-card { background: #1a1a24; border: 1px solid #2a2a35; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; flex-shrink: 0; }
@@ -227,10 +227,24 @@
             </div>
 
             <div class="sidebar-section">
-                <label>Launch Arguments</label>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="launch-args-input" placeholder="-windowed -screen-width 1920">
-                    <button id="save-args-btn" class="btn-secondary" style="width: 40px; padding: 0; flex-shrink: 0;" title="Save Arguments"><i class="fa-solid fa-save"></i></button>
+                <label>Instance Summary</label>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-total-mods">0</span>
+                        <span class="stat-label">Total</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-active-mods" style="color: #00ff88;">0</span>
+                        <span class="stat-label">Active</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-disabled-mods" style="color: #ff4d4d;">0</span>
+                        <span class="stat-label">Disabled</span>
+                    </div>
+                    <div class="stat-box" style="grid-column: span 3; flex-direction: row; justify-content: space-between; padding: 10px 15px;">
+                        <span class="stat-label">BepInEx</span>
+                        <span class="stat-value" id="stat-bepinex-status" style="font-size: 13px;">Missing</span>
+                    </div>
                 </div>
             </div>
 

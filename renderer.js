@@ -22,9 +22,6 @@ const iconFileInput = document.getElementById('icon-file-input');
 const defaultIcon = document.getElementById('default-icon');
 const customIcon = document.getElementById('custom-icon');
 
-const launchArgsInput = document.getElementById('launch-args-input');
-const saveArgsBtn = document.getElementById('save-args-btn');
-
 const tabMods = document.getElementById('tab-mods');
 const tabConsole = document.getElementById('tab-console');
 const viewMods = document.getElementById('view-mods');
@@ -63,6 +60,12 @@ const confirmYesBtn = document.getElementById('confirm-yes-btn');
 const updateModal = document.getElementById('update-modal');
 const updateLaterBtn = document.getElementById('update-later-btn');
 const updateRestartBtn = document.getElementById('update-restart-btn');
+
+// Instance Stats DOM Elements
+const statTotalMods = document.getElementById('stat-total-mods');
+const statActiveMods = document.getElementById('stat-active-mods');
+const statDisabledMods = document.getElementById('stat-disabled-mods');
+const statBepinexStatus = document.getElementById('stat-bepinex-status');
 
 let appState = null;
 let githubDatabase = [];
@@ -163,18 +166,6 @@ window.electronAPI.onLogUpdate((e, line) => {
     div.innerText = line;
     consoleOutput.appendChild(div);
     consoleOutput.scrollTop = consoleOutput.scrollHeight;
-});
-
-saveArgsBtn.addEventListener('click', async () => {
-    saveArgsBtn.disabled = true;
-    saveArgsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-    await window.electronAPI.saveLaunchArgs(launchArgsInput.value);
-    await syncState();
-    setTimeout(() => {
-        saveArgsBtn.innerHTML = '<i class="fa-solid fa-check"></i>';
-        saveArgsBtn.disabled = false;
-        setTimeout(() => saveArgsBtn.innerHTML = '<i class="fa-solid fa-save"></i>', 1500);
-    }, 300);
 });
 
 iconFileInput.addEventListener('change', async (e) => {
@@ -381,7 +372,23 @@ deleteSubmitBtn.addEventListener('click', async () => {
 function updateMainUI() {
     const inst = getActiveInstance();
     formatPlaytime(inst.playtime);
-    launchArgsInput.value = inst.launchArgs || "";
+
+    // Update Instance Stats
+    const totalMods = Object.keys(inst.installedMods || {}).length;
+    const disabledMods = (inst.disabledMods || []).length;
+    const activeMods = totalMods - disabledMods;
+
+    statTotalMods.innerText = totalMods;
+    statActiveMods.innerText = activeMods;
+    statDisabledMods.innerText = disabledMods;
+
+    if (inst.bepinexInstalled) {
+        statBepinexStatus.innerText = "Installed";
+        statBepinexStatus.style.color = "#00ff88";
+    } else {
+        statBepinexStatus.innerText = "Missing";
+        statBepinexStatus.style.color = "#ff4d4d";
+    }
 
     if (inst.icon) {
         customIcon.src = `file://${inst.icon}`;
@@ -463,7 +470,7 @@ async function handleInstallWithDependencies(targetModId) {
         const data = githubDatabase.find(m => m.id === id);
         if (data) await window.electronAPI.installMod(data.id, data.download_url, data.version);
     }
-    await syncState(); loadModsUI();
+    await syncState(); loadModsUI(); updateMainUI();
 }
 
 async function loadModsUI() {
@@ -523,7 +530,7 @@ async function loadModsUI() {
             const currentState = e.target.getAttribute('data-state') === 'true';
             e.target.innerText = "Working..."; e.target.disabled = true;
             await window.electronAPI.toggleMod(modId, !currentState);
-            await syncState(); loadModsUI();
+            await syncState(); loadModsUI(); updateMainUI();
         }));
 
         document.querySelectorAll('.uninstall-mod-btn').forEach(btn => btn.addEventListener('click', async (e) => {
@@ -531,7 +538,7 @@ async function loadModsUI() {
             if (confirmed) {
                 e.target.innerText = "Deleting..."; e.target.disabled = true;
                 await window.electronAPI.uninstallMod(e.target.getAttribute('data-id'));
-                await syncState(); loadModsUI();
+                await syncState(); loadModsUI(); updateMainUI();
             }
         }));
     } catch (error) { modListContainer.innerHTML = `<p style="color: #ff4d4d;">Failed to load mods.</p>`; }

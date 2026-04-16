@@ -25,7 +25,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     setIcon: (base64Data) => ipcRenderer.invoke('set-icon', base64Data),
     
-    saveLaunchArgs: (args) => ipcRenderer.invoke('save-launch-args', args),
     switchInstance: (name) => ipcRenderer.invoke('switch-instance', name),
     createInstance: (name) => ipcRenderer.invoke('create-instance', name),
     renameInstance: (oldName, newName) => ipcRenderer.invoke('rename-instance', oldName, newName),

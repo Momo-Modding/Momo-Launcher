@@ -48,20 +48,19 @@ async function loadState() {
                 installedMods: state.installedMods || {},
                 disabledMods: state.disabledMods || [],
                 playtime: state.playtime || 0,
-                launchArgs: "",
                 icon: ""
             };
             return newState;
         }
         Object.values(state.instances).forEach(inst => {
             if (!inst.disabledMods) inst.disabledMods = [];
-            if (!inst.launchArgs) inst.launchArgs = "";
             if (!inst.icon) inst.icon = "";
+            if (inst.launchArgs !== undefined) delete inst.launchArgs;
         });
         return state;
     }
     return { 
-        instances: { "Default": { gameInstalled: false, bepinexInstalled: false, installedMods: {}, disabledMods: [], playtime: 0, launchArgs: "", icon: "" } }, 
+        instances: { "Default": { gameInstalled: false, bepinexInstalled: false, installedMods: {}, disabledMods: [], playtime: 0, icon: "" } }, 
         activeInstance: "Default" 
     };
 }
@@ -146,10 +145,7 @@ ipcMain.on('launch-game', async (event) => {
     const { gameExePath } = getPaths(state);
     
     if (fs.existsSync(gameExePath) && !activeGames[instance]) {
-        const argsStr = state.instances[instance].launchArgs || "";
-        const argsArray = argsStr.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(s => s.replace(/(^"|"$)/g, '')) || [];
-        
-        const game = spawn(gameExePath, argsArray, { detached: false });
+        const game = spawn(gameExePath, [], { detached: false });
         activeGames[instance] = setInterval(async () => {
             let freshState = await loadState();
             freshState.instances[instance].playtime += 10000;
@@ -166,13 +162,6 @@ ipcMain.on('launch-game', async (event) => {
             event.sender.send('game-closed', finalState.instances[instance].playtime);
         });
     }
-});
-
-ipcMain.handle('save-launch-args', async (event, args) => {
-    let state = await loadState();
-    state.instances[state.activeInstance].launchArgs = args;
-    await saveState(state);
-    return { success: true };
 });
 
 ipcMain.handle('set-icon', async (event, base64Data) => {
@@ -223,15 +212,12 @@ ipcMain.handle('export-instance', async (event, instanceName) => {
             archive.pipe(output);
             archive.directory(instancePath, false);
 
-            // Inject the manifest metadata into the ZIP
             const manifest = {
                 installedMods: instState.installedMods || {},
-                disabledMods: instState.disabledMods || [],
-                launchArgs: instState.launchArgs || ""
+                disabledMods: instState.disabledMods || []
             };
             archive.append(JSON.stringify(manifest, null, 2), { name: 'momo_manifest.json' });
 
-            // Inject the custom icon into the ZIP if one exists
             if (instState.icon && fs.existsSync(instState.icon)) {
                 archive.file(instState.icon, { name: 'momo_icon.png' });
             }
@@ -262,21 +248,17 @@ ipcMain.handle('import-instance', async (event, zipPath) => {
         
         let mods = {};
         let disabledMods = [];
-        let launchArgs = "";
         let iconPath = "";
 
         const manifestPath = path.join(newInstPath, 'momo_manifest.json');
         const exportedIconPath = path.join(newInstPath, 'momo_icon.png');
 
-        // Restore Metadata
         if (fs.existsSync(manifestPath)) {
             const manifest = JSON.parse(await fsp.readFile(manifestPath, 'utf8'));
             mods = manifest.installedMods || {};
             disabledMods = manifest.disabledMods || [];
-            launchArgs = manifest.launchArgs || "";
-            await fsp.unlink(manifestPath); // Clean up the temp manifest
+            await fsp.unlink(manifestPath); 
         } else {
-            // Fallback for older exports without a manifest
             const pluginsDir = path.join(newInstPath, 'BepInEx', 'plugins');
             if (fs.existsSync(pluginsDir)) {
                 const folders = fs.readdirSync(pluginsDir, {withFileTypes: true});
@@ -284,14 +266,13 @@ ipcMain.handle('import-instance', async (event, zipPath) => {
             }
         }
 
-        // Restore Custom Icon
         if (fs.existsSync(exportedIconPath)) {
             const iconsDir = path.join(userDataPath, 'Icons');
             if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
             
             iconPath = path.join(iconsDir, `${newName}_${Date.now()}.png`);
             await fsp.copyFile(exportedIconPath, iconPath);
-            await fsp.unlink(exportedIconPath); // Clean up the temp icon
+            await fsp.unlink(exportedIconPath); 
         }
 
         state.instances[newName] = {
@@ -300,7 +281,6 @@ ipcMain.handle('import-instance', async (event, zipPath) => {
             installedMods: mods,
             disabledMods: disabledMods,
             playtime: 0,
-            launchArgs: launchArgs,
             icon: iconPath
         };
         state.activeInstance = newName;
@@ -510,7 +490,7 @@ ipcMain.handle('switch-instance', async (event, name) => {
 ipcMain.handle('create-instance', async (event, name) => {
     let state = await loadState();
     if (state.instances[name]) return { success: false, error: "Instance exists" };
-    state.instances[name] = { gameInstalled: false, bepinexInstalled: false, installedMods: {}, disabledMods: [], playtime: 0, launchArgs: "", icon: "" };
+    state.instances[name] = { gameInstalled: false, bepinexInstalled: false, installedMods: {}, disabledMods: [], playtime: 0, icon: "" };
     state.activeInstance = name;
     await saveState(state);
     return { success: true };
