@@ -129,6 +129,47 @@ app.whenReady().then(createWindow);
 
 ipcMain.handle('get-state', () => loadState());
 
+ipcMain.handle('scan-local-mods', async () => {
+    try {
+        let state = await loadState();
+        const instState = state.instances[state.activeInstance];
+        if (!instState.bepinexInstalled) return { success: true };
+        
+        const { bepinexPluginsDir, bepinexDisabledDir } = getPaths(state);
+        
+        let actualMods = new Set();
+        let disabledMods = new Set();
+
+        if (fs.existsSync(bepinexPluginsDir)) {
+            fs.readdirSync(bepinexPluginsDir, {withFileTypes: true}).forEach(dirent => {
+                if(dirent.isDirectory()) actualMods.add(dirent.name);
+            });
+        }
+        
+        if (fs.existsSync(bepinexDisabledDir)) {
+            fs.readdirSync(bepinexDisabledDir, {withFileTypes: true}).forEach(dirent => {
+                if(dirent.isDirectory()) {
+                    actualMods.add(dirent.name);
+                    disabledMods.add(dirent.name);
+                }
+            });
+        }
+
+        const newInstalled = {};
+        actualMods.forEach(modId => {
+            newInstalled[modId] = instState.installedMods[modId] || "local";
+        });
+        
+        instState.installedMods = newInstalled;
+        instState.disabledMods = Array.from(disabledMods);
+        
+        await saveState(state);
+        return { success: true };
+    } catch(e) {
+        return { success: false, error: e.message };
+    }
+});
+
 ipcMain.handle('open-mods-folder', async () => {
     let state = await loadState();
     const { bepinexPluginsDir } = getPaths(state);

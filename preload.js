@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     toggleMod: (modId, disable) => ipcRenderer.invoke('toggle-mod', modId, disable),
     openModsFolder: () => ipcRenderer.invoke('open-mods-folder'),
     
+    scanLocalMods: () => ipcRenderer.invoke('scan-local-mods'),
+    
     installLocalMod: (file) => {
         const filePath = webUtils.getPathForFile(file);
         return ipcRenderer.invoke('install-local-mod', filePath);

@@ -28,6 +28,7 @@ const viewMods = document.getElementById('view-mods');
 const viewConsole = document.getElementById('view-console');
 
 const modSearchInput = document.getElementById('mod-search-input');
+const refreshModsBtn = document.getElementById('refresh-mods-btn'); 
 const consoleOutput = document.getElementById('console-output');
 
 const progressContainer = document.getElementById('progress-container');
@@ -61,7 +62,6 @@ const updateModal = document.getElementById('update-modal');
 const updateLaterBtn = document.getElementById('update-later-btn');
 const updateRestartBtn = document.getElementById('update-restart-btn');
 
-// Instance Stats DOM Elements
 const statTotalMods = document.getElementById('stat-total-mods');
 const statActiveMods = document.getElementById('stat-active-mods');
 const statDisabledMods = document.getElementById('stat-disabled-mods');
@@ -293,7 +293,7 @@ window.addEventListener('drop', async (e) => {
     const file = e.dataTransfer.files[0];
     if (file && file.name.toLowerCase().endsWith('.zip')) {
         const result = await window.electronAPI.installLocalMod(file);
-        if (result.success) { await syncState(); loadModsUI(); }
+        if (result.success) { await syncState(); loadModsUI(); updateMainUI(); }
     }
 });
 
@@ -373,7 +373,6 @@ function updateMainUI() {
     const inst = getActiveInstance();
     formatPlaytime(inst.playtime);
 
-    // Update Instance Stats
     const totalMods = Object.keys(inst.installedMods || {}).length;
     const disabledMods = (inst.disabledMods || []).length;
     const activeMods = totalMods - disabledMods;
@@ -448,6 +447,33 @@ checkUpdatesBtn.addEventListener('click', async () => {
 });
 
 modSearchInput.addEventListener('input', () => loadModsUI());
+
+// --- UPDATED SYNC + CHECK FOR UPDATES ACTION ---
+refreshModsBtn.addEventListener('click', async () => {
+    const originalHtml = refreshModsBtn.innerHTML;
+    refreshModsBtn.disabled = true;
+    refreshModsBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    
+    try {
+        // 1. Scan hard drive for any manually added/deleted mod folders
+        await window.electronAPI.scanLocalMods();
+        
+        // 2. Fetch the latest Mod Database bypassing browser cache
+        const res = await fetch('https://raw.githubusercontent.com/Momo-Modding/Momo-Mod-Database/main/mods.json?t=' + new Date().getTime());
+        const data = await res.json();
+        githubDatabase = data.mods;
+        
+        // 3. Synchronize state and visually repaint the UI
+        await syncState();
+        await loadModsUI();
+        updateMainUI();
+    } catch (e) {
+        showCustomAlert("Failed to fetch mod updates. Please check your internet connection.");
+    }
+    
+    refreshModsBtn.innerHTML = originalHtml;
+    refreshModsBtn.disabled = false;
+});
 
 async function handleInstallWithDependencies(targetModId) {
     let installQueue = [targetModId];
