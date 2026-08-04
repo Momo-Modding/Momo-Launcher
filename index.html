@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Momo Launcher</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; overflow: hidden; }
+        body { font-family: 'Poppins', sans-serif; background-color: #0b0b0f; color: #e0e0e0; }
+
+        .app-container { 
+            width: 100%; 
+            height: 100%; 
+            padding: 30px 40px; 
+            display: grid; 
+            grid-template-columns: 320px minmax(0, 1fr); 
+            gap: 30px; 
+        }
+
+        .sidebar { 
+            display: flex; flex-direction: column; gap: 20px; background: #121218; 
+            padding: 25px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); 
+            border: 1px solid #20202b; height: 100%; overflow-y: auto;
+        }
+
+        .sidebar h1 { 
+            font-weight: 800; 
+            font-size: 32px; 
+            letter-spacing: 3px; 
+            color: #8a0303; 
+            text-align: center; 
+            margin-bottom: 5px; 
+            text-shadow: 0 2px 15px rgba(138, 3, 3, 0.5); 
+        }
+
+        .sidebar-section { display: flex; flex-direction: column; gap: 12px; }
+        .sidebar-section.bottom-anchored { margin-top: auto; padding-top: 20px; border-top: 1px solid #20202b; }
+        .sidebar label { font-size: 11px; color: #8a8a9d; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+
+        .instance-header { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; background: #1a1a24; padding: 10px; border-radius: 12px; border: 1px solid #2a2a35; }
+        
+        .instance-icon-wrapper { 
+            position: relative; 
+            width: 50px; 
+            height: 50px; 
+            min-width: 50px;
+            max-width: 50px;
+            border-radius: 10px; 
+            background: #262635; 
+            overflow: hidden; 
+            cursor: pointer; 
+            display: block;
+            flex-shrink: 0; 
+            transition: border-color 0.2s; 
+            border: 2px solid transparent; 
+        }
+        
+        .instance-icon-wrapper i { 
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px; 
+            color: #a0a0b5; 
+        }
+        
+        .instance-icon-wrapper img { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            display: none; 
+            z-index: 1;
+        }
+
+        .instance-icon-wrapper:hover { border-color: #00ff88; }
+        .instance-icon-wrapper:hover::after { 
+            content: "\f03e"; 
+            font-family: "Font Awesome 6 Free"; 
+            font-weight: 900; 
+            position: absolute; 
+            inset: 0; 
+            background: rgba(0,0,0,0.7); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            color: white; 
+            font-size: 18px; 
+            z-index: 2; 
+        }
+
+        .custom-select-container { position: relative; width: 100%; user-select: none; }
+        .custom-select-trigger { background-color: transparent; color: #fff; padding: 10px 15px; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: color 0.2s; }
+        .custom-select-trigger:hover { color: #00ff88; }
+        .custom-select-trigger i { font-size: 12px; color: #a0a0b5; transition: transform 0.2s; }
+        .custom-select-container.open .custom-select-trigger i { transform: rotate(180deg); }
+        .custom-select-options { position: absolute; top: 100%; left: 0; right: 0; background-color: #1a1a24; border: 1px solid #3e3e4f; border-radius: 8px; z-index: 99; margin-top: 8px; display: none; flex-direction: column; max-height: 200px; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .custom-select-container.open .custom-select-options { display: flex; }
+        .custom-select-option { padding: 12px 15px; color: #a0a0b5; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; border-bottom: 1px solid #20202b; }
+        .custom-select-option:last-child { border-bottom: none; }
+        .custom-select-option:hover { background-color: #262635; color: #fff; }
+        .custom-select-option.selected { color: #00ff88; background-color: rgba(0, 255, 136, 0.05); }
+
+        button { 
+            font-family: 'Poppins', sans-serif; font-weight: 600; height: 40px; width: 100%; 
+            padding: 0 15px; display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease; 
+            text-transform: uppercase; font-size: 12px; letter-spacing: 1px; white-space: nowrap; 
+        }
+        button:disabled { cursor: not-allowed; opacity: 0.5; filter: grayscale(1); }
+
+        .btn-primary { background: linear-gradient(135deg, #00ff88 0%, #00b35f 100%); color: #000; box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 255, 136, 0.4); }
+        .btn-secondary { background: #1a1a24; color: #fff; border: 1px solid #2a2a35; }
+        .btn-secondary:hover:not(:disabled) { background: #262635; border-color: #3e3e4f; }
+        .btn-danger { background: rgba(220, 53, 69, 0.1); color: #ff4d4d; border: 1px solid rgba(220, 53, 69, 0.3); }
+        .btn-danger:hover:not(:disabled) { background: #dc3545; color: white; }
+        .btn-install { background: #007bff; color: white; }
+        .btn-install:hover:not(:disabled) { background: #0056b3; }
+        .btn-warning { background: #ff9900; color: #000; }
+        .btn-warning:hover:not(:disabled) { background: #e68a00; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .stat-box { background: #1a1a24; border: 1px solid #2a2a35; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .stat-value { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+        .stat-label { font-size: 10px; color: #8a8a9d; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+
+        .playtime-display { font-size: 12px; color: #8a8a9d; text-align: center; margin-bottom: 5px; font-weight: 600; }
+
+        main { display: flex; flex-direction: column; height: 100%; background: #121218; border-radius: 16px; border: 1px solid #20202b; padding: 25px; box-shadow: 0 8px 32px rgba(0,0,0,0.6); min-height: 0; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #20202b; padding-bottom: 15px; margin-bottom: 20px; flex-shrink: 0; }
+        
+        .tabs { display: flex; gap: 25px; }
+        .tab-btn { background: transparent; border: none; color: #6b6b80; font-size: 15px; font-weight: 800; cursor: pointer; padding: 0 0 10px 0; border-bottom: 3px solid transparent; text-transform: uppercase; letter-spacing: 2px; width: auto; height: auto; border-radius: 0; transition: color 0.2s; }
+        .tab-btn.active { color: #00ff88; border-bottom-color: #00ff88; }
+        .tab-btn:hover:not(.active) { color: #fff; }
+
+        .tools-group { display: flex; gap: 10px; }
+        .btn-tool { width: auto; padding: 0 15px; height: 34px; font-size: 11px; }
+        .btn-icon { width: 34px; padding: 0; font-size: 14px; }
+
+        .view-section { display: none; flex-direction: column; flex-grow: 1; overflow: hidden; min-height: 0; }
+        .view-section.active { display: flex; }
+        
+        .search-box { display: flex; width: 100%; margin-bottom: 15px; flex-shrink: 0; gap: 10px; padding-right: 10px; }
+        .search-box input { background: #1a1a24; color: #fff; padding: 0 15px; height: 40px; border: 1px solid #2a2a35; border-radius: 8px; font-family: 'Poppins', sans-serif; outline: none; width: 100%; font-size: 13px; transition: border-color 0.2s; min-width: 0; }
+        .search-box input:focus { border-color: #00ff88; }
+        
+        .mod-stack { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 10px; flex-grow: 1; min-height: 0; }
+        .mod-card { background: #1a1a24; border: 1px solid #2a2a35; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; flex-shrink: 0; }
+        .mod-card.disabled { opacity: 0.6; border-style: dashed; }
+        .mod-card:hover { transform: translateX(4px); border-color: #3e3e4f; box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+        .mod-card h3 { font-size: 16px; margin-bottom: 4px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .mod-card h3 small { font-size: 11px; background: #262635; padding: 3px 8px; border-radius: 6px; color: #a0a0b5; }
+        .mod-card .author { font-size: 12px; color: #78788f; margin-bottom: 8px; }
+        .mod-card .desc { font-size: 13px; line-height: 1.5; color: #bbbbc5; flex-grow: 1; margin-bottom: 15px; }
+        .mod-card-actions { display: flex; gap: 10px; margin-top: auto; }
+        .mod-card-actions button { flex: 1; height: 34px; font-size: 11px; }
+
+        .console-output { background: #0b0b0f; border: 1px solid #20202b; border-radius: 12px; padding: 15px; font-family: 'Consolas', monospace; font-size: 12px; color: #00ff88; overflow-y: auto; flex-grow: 1; min-height: 0; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6; }
+
+        #drop-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 255, 136, 0.15); backdrop-filter: blur(8px); z-index: 9999; border: 4px dashed #00ff88; justify-content: center; align-items: center; pointer-events: none; }
+        #drop-overlay h1 { color: #00ff88; font-size: 40px; text-shadow: 0 4px 20px rgba(0,255,136,0.5); }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #121218; padding: 30px; border-radius: 16px; width: 400px; border: 1px solid #2a2a35; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .modal-content h3 { margin-bottom: 20px; color: #fff; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .modal-content input[type="text"] {
+            background: #0b0b0f; 
+            border: 2px solid #2a2a35;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            width: 100%;
+            transition: all 0.2s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+        .modal-content input[type="text"]:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 0 4px rgba(0, 255, 136, 0.15);
+            background: #1a1a24;
+        }
+        .modal-content input[type="text"]::placeholder {
+            color: #4a4a5a;
+            font-weight: 400;
+        }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+        .modal-actions button { width: auto; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3e3e4f; }
+
+        @media (max-width: 1100px) {
+            .app-container {
+                padding: 20px;
+                gap: 20px;
+                grid-template-columns: 280px minmax(0, 1fr);
+            }
+            .sidebar, main {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="drop-overlay"><h1>DROP .ZIP TO INSTALL</h1></div>
+
+    <input type="file" id="icon-file-input" accept="image/*" style="display: none;">
+    <input type="file" id="import-zip-input" accept=".zip" style="display: none;">
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>MOMO</h1>
+            
+            <div class="sidebar-section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label>Active Instance</label>
+                    <span style="font-size: 10px; color: #6b6b80; font-weight: 600; cursor: help;" title="Images will be auto-scaled. We recommend a 1:1 aspect ratio (e.g., 256x256)."><i class="fa-solid fa-circle-info"></i> Rec: 256x256</span>
+                </div>
+                
+                <div class="instance-header">
+                    <div class="instance-icon-wrapper" id="instance-icon-btn" title="Upload Custom Icon">
+                        <i class="fa-solid fa-cube" id="default-icon"></i>
+                        <img id="custom-icon" src="" alt="icon">
+                    </div>
+                    <div style="flex-grow: 1; min-width: 0;">
+                        <div class="custom-select-container" id="custom-select-container">
+                            <div class="custom-select-trigger" id="instance-selected">
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Loading...</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <div class="custom-select-options" id="instance-options"></div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button id="new-instance-btn" class="btn-secondary"><i class="fa-solid fa-plus" style="margin-right: 8px;"></i>New</button>
+                    <button id="trigger-import-btn" class="btn-secondary"><i class="fa-solid fa-file-zipper" style="margin-right: 8px;"></i>Import</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <button id="rename-instance-btn" class="btn-secondary" style="padding: 0 5px;">Rename</button>
+                    <button id="export-instance-btn" class="btn-secondary" style="padding: 0 5px;">Export</button>
+                    <button id="delete-instance-btn" class="btn-danger" style="padding: 0 5px;">Delete</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <label>Instance Summary</label>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-total-mods">0</span>
+                        <span class="stat-label">Total</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-active-mods" style="color: #00ff88;">0</span>
+                        <span class="stat-label">Active</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value" id="stat-disabled-mods" style="color: #ff4d4d;">0</span>
+                        <span class="stat-label">Disabled</span>
+                    </div>
+                    <div class="stat-box" style="grid-column: span 3; flex-direction: row; justify-content: space-between; padding: 10px 15px;">
+                        <span class="stat-label">BepInEx</span>
+                        <span class="stat-value" id="stat-bepinex-status" style="font-size: 13px;">Missing</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section bottom-anchored">
+                <div id="playtime-text" class="playtime-display">0.0 hrs on record</div>
+                <button id="install-game-btn" class="btn-install" style="height: 48px; font-size: 14px;">INSTALL GAME</button>
+                <div id="progress-container" style="display: none; width: 100%; background: #20202b; border-radius: 6px; overflow: hidden; margin-top: 10px; height: 6px;">
+                    <div id="progress-bar" style="width: 0%; height: 100%; background: #00ff88; transition: width 0.1s linear;"></div>
+                </div>
+                <div id="play-group" style="display: none; gap: 10px;">
+                    <button id="play-btn" class="btn-primary" style="flex-grow: 1; height: 48px; font-size: 15px; font-weight: 800;">PLAY GAME</button>
+                    <button id="uninstall-game-btn" class="btn-danger" style="width: 48px; height: 48px; padding: 0; flex-shrink: 0; font-size: 18px;" title="Uninstall Instance"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+            </div>
+        </aside>
+
+        <main>
+            <header class="top-bar">
+                <div class="tabs">
+                    <button id="tab-mods" class="tab-btn active">Mods</button>
+                    <button id="tab-console" class="tab-btn">Console</button>
+                </div>
+                <div class="tools-group">
+                    <button id="bepinex-btn" class="btn-secondary btn-tool">Install BepInEx</button>
+                    <button id="uninstall-bepinex-btn" class="btn-danger btn-tool" style="display: none;">Uninstall BepInEx</button>
+                    <div style="width: 1px; background: #20202b; margin: 0 5px;"></div>
+                    <button id="open-folder-btn" class="btn-secondary btn-tool btn-icon" title="Open Mods Folder"><i class="fa-solid fa-folder-open"></i></button>
+                    <button id="check-updates-btn" class="btn-secondary btn-tool btn-icon" title="Check for Launcher Updates"><i class="fa-solid fa-arrows-rotate"></i></button>
+                </div>
+            </header>
+
+            <div id="view-mods" class="view-section active">
+                <div class="search-box">
+                    <input type="text" id="mod-search-input" placeholder="Search for mods by name or description...">
+                    <button id="refresh-mods-btn" class="btn-secondary" style="width: 40px; height: 40px; padding: 0; flex-shrink: 0;" title="Refresh Mods List & Check for Updates"><i class="fa-solid fa-arrows-rotate"></i></button>
+                </div>
+                <div id="mod-list" class="mod-stack">Loading mods...</div>
+            </div>
+
+            <div id="view-console" class="view-section">
+                <div id="console-output" class="console-output">Waiting for game to launch...</div>
+            </div>
+        </main>
+    </div>
+
+    <div id="instance-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Create New Instance</h3>
+            <input type="text" id="instance-name-input" placeholder="e.g., Kaizo Momo" autocomplete="off">
+            <div class="modal-actions">
+                <button id="modal-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="modal-create-btn" class="btn-primary" style="padding: 0 24px;">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="rename-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Rename Instance</h3>
+            <input type="text" id="rename-name-input" autocomplete="off">
+            <div class="modal-actions">
+                <button id="rename-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="rename-submit-btn" class="btn-primary" style="padding: 0 24px;">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-modal" class="modal-overlay">
+        <div class="modal-content" style="border-color: #dc3545;">
+            <h3 style="color: #ff4d4d;">Delete Instance</h3>
+            <p style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 14px;">Are you sure you want to permanently delete <strong id="delete-target-name" style="color: white;"></strong>?<br><br>This will erase the game, mods, and your playtime.</p>
+            <div class="modal-actions">
+                <button id="delete-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="delete-submit-btn" class="btn-danger" style="padding: 0 24px;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="alert-modal" class="modal-overlay" style="z-index: 2000;">
+        <div class="modal-content" style="border-color: #00ff88; box-shadow: 0 20px 50px rgba(0,255,136,0.1);">
+            <h3 style="color: #00ff88;"><i class="fa-solid fa-circle-info"></i> Notice</h3>
+            <p id="alert-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 14px;"></p>
+            <div class="modal-actions">
+                <button id="alert-ok-btn" class="btn-primary" style="padding: 0 24px; width: 100%;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay" style="z-index: 2100;">
+        <div class="modal-content" style="border-color: #ffb347;">
+            <h3 style="color: #ffb347;"><i class="fa-solid fa-circle-question"></i> Confirm Action</h3>
+            <p id="confirm-message-text" style="margin-bottom: 20px; color: #bbbbc5; line-height: 1.5; font-size: 14px;"></p>
+            <div class="modal-actions">
+                <button id="confirm-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="confirm-yes-btn" class="btn-primary" style="padding: 0 24px; background: linear-gradient(135deg, #ffb347 0%, #ff9900 100%);">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="update-modal" class="modal-overlay" style="z-index: 2500;">
+        <div class="modal-content" style="border-color: #00ff88; text-align: center;">
+            <h3 style="color: #00ff88; font-size: 24px; margin-bottom: 10px;"><i class="fa-solid fa-circle-arrow-up"></i> Update Ready!</h3>
+            <p style="color: #bbbbc5; line-height: 1.6; font-size: 14px; margin-bottom: 25px;">A new version of the launcher has been downloaded.<br><br>Restart and install now?</p>
+            <div class="modal-actions" style="justify-content: center; gap: 15px;">
+                <button id="update-later-btn" class="btn-secondary" style="width: 120px;">Later</button>
+                <button id="update-restart-btn" class="btn-primary" style="width: 150px;">Restart Now</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./renderer.js"></script>
+</body>
+</html>
